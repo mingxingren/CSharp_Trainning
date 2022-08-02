@@ -3,22 +3,39 @@ using System.Net.Sockets;
 using System.Text;
 
 public class SocketListener {
+    private Socket? m_listener;
+    private IPEndPoint? m_localEndPoint;
+
+    // 初始化函数
+    public async Task<bool> Init(int port) {
+        try {
+            IPHostEntry host =  await Dns.GetHostEntryAsync("localhost");
+            IPAddress iPAddress_V6 = host.AddressList[0];
+            IPAddress iPAddress_V4 = host.AddressList[1];
+
+            m_localEndPoint = new IPEndPoint(iPAddress_V4, 9999);
+
+            m_listener = new Socket(iPAddress_V4.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            m_listener.Bind(m_localEndPoint);
+            m_listener.Listen(10);
+            return true;
+        }
+        catch (Exception e) {
+            Console.WriteLine(e.ToString());
+            return false;
+        }
+    }
+
+    public async Task<Socket> Listen() {
+        Console.WriteLine("start listen server, host: {0}", m_localEndPoint);
+        Socket handler = await m_listener!.AcceptAsync();
+        Console.WriteLine("accept a client ipaddress: {0}", handler.LocalEndPoint);
+        return handler;
+    }
+
     // 该方法实际上是同步执行
-    public static async Task StartSever() {
-        // 异步 获取ip地址
-        IPHostEntry host =  await Dns.GetHostEntryAsync("localhost");
-        IPAddress iPAddress_V6 = host.AddressList[0];
-        IPAddress iPAddress_V4 = host.AddressList[1];
-
-        IPEndPoint localEndPoint = new IPEndPoint(iPAddress_V4, 9999);
-
+    public async Task Communication(Socket handler) {        
         try{
-            Socket listener = new Socket(iPAddress_V4.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(localEndPoint);
-            listener.Listen(10);
-            Console.WriteLine("start listen server, host: {0}", localEndPoint);
-            Socket handler = await listener.AcceptAsync();
-            Console.WriteLine("accept a client ipaddress: {0}", handler.LocalEndPoint);
             string? data = null;
             byte[]? bytes = null;
 
